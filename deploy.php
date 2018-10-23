@@ -1,11 +1,5 @@
 <?php
 
-function calcSha1($body, $my_key)
-{
-    $hmac = hash_hmac('sha1', $body, $my_key);
-    return 'sha1='.$hmac;
-}
-
 function loadEnv($path)
 {
     $content = file_get_contents($path);
@@ -26,39 +20,47 @@ function loadEnv($path)
     
 }
 
-$time = date('d-m-Y H:i:s');
+function getArrayValue (array $arr, $key)
+{
+    if (isset($arr[$key])) {
+        return $arr[$key];
+    }
+    throw new \Exception ("Undefined {$key}");
+}
+
+function githubKeyIsOK ($githubSecret, $githubSignature, $body)
+{
+    $hmac = hash_hmac('sha1', $body, $githubSecret);
+    $calcSignature = 'sha1='.$hmac;
+
+    return $calcSignature === $githubSignature;
+}
+
+function execDeploy()
+{
+  $dir = __DIR__;
+  return shell_exec("cd {$dir} && make deploy");
+}
+
+function logToFile($content, $file)
+{
+    $time = date('d-m-Y H:i:s');
+    file_put_contents($file, "[{$time}]:".$content.PHP_EOL, FILE_APPEND);
+}
 
 try {
     loadEnv(__DIR__.'/.env');
 
-    if (!isset($_ENV['GITHUB_SECRET'])) {
-      throw new \Exception ('Undefined github secret key');
-    }
-
-    $githubSecret = $_ENV['GITHUB_SECRET'];
-
-    if (!isset($_SERVER['HTTP_X_HUB_SIGNATURE'])) {
-      throw new \Exception ('Undefined HTTP_X_HUB_SIGNATURE');
-    }
-
-    $github_sha1 = $_SERVER['HTTP_X_HUB_SIGNATURE'];
+    $githubSecret = getArrayValue($_ENV, 'GITHUB_SECRET');
+    $githubSignature = getArrayValue($_SERVER, 'HTTP_X_HUB_SIGNATURE');
     $body = file_get_contents('php://input');
-    $calcLocalSha1 = calcSha1($body, $githubSecret);
     
-    if ($calcLocalSha1 !== $github_sha1) {
+    if (!githubKeyIsOK($githubSecret, $githubSignature, $body)) {
         throw new \Exception ("Local sha1 {$calcLocalSha1} !== {$github_sha1} Github sha1");
     }
 
-    $dir = __DIR__;
-    $res = shell_exec("cd {$dir} && make deploy");
-    file_put_contents('deploy.log', "[{$time}]:".$res.PHP_EOL, FILE_APPEND);
+    $resDeploy = execDeploy();
+    logToFile($resDeploy, 'deploy.log');
 } catch (\Exception $e) {
-
-    file_put_contents('deploy.log', "[{$time}]:".$e->getMessage().PHP_EOL, FILE_APPEND);
-
-} finally {
-
-    file_put_contents('post.log', json_encode($_POST));
-
+    logToFile($e->getMessage(), 'deploy.log');
 }
-

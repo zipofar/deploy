@@ -51,7 +51,6 @@ try {
     $dir = __DIR__;
     $res = shell_exec("cd {$dir} && make deploy");
     file_put_contents('deploy.log', "[{$time}]:".$res.PHP_EOL, FILE_APPEND);
-
 } catch (\Exception $e) {
 
     file_put_contents('deploy.log', "[{$time}]:".$e->getMessage().PHP_EOL, FILE_APPEND);

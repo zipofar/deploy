@@ -35,11 +35,12 @@ try {
       throw new \Exception ('Undefined github secret key');
     }
 
+    $githubSecret = $_ENV['GITHUB_SECRET'];
+
     if (!isset($_SERVER['HTTP_X_HUB_SIGNATURE'])) {
       throw new \Exception ('Undefined HTTP_X_HUB_SIGNATURE');
     }
 
-    $githubSecret = $_ENV['GITHUB_SECRET'];
     $github_sha1 = $_SERVER['HTTP_X_HUB_SIGNATURE'];
     $body = file_get_contents('php://input');
     $calcLocalSha1 = calcSha1($body, $githubSecret);

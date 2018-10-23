@@ -45,14 +45,20 @@ try {
     $calcLocalSha1 = calcSha1($body, $githubSecret);
     
     if ($calcLocalSha1 !== $github_sha1) {
-        throw new \Exception ("Local sha1␣{$calcLocalSha1} !== {$github_sha1}␣Github sha1");
+        throw new \Exception ("Local sha1 {$calcLocalSha1} !== {$github_sha1} Github sha1");
     }
 
     $dir = __DIR__;
     $res = shell_exec("cd {$dir} && make deploy");
-    file_put_contents('deploy.log', "[{$time}]:".$res.PHP_EOL);
+    file_put_contents('deploy.log', "[{$time}]:".$res.PHP_EOL, FILE_APPEND);
 
 } catch (\Exception $e) {
 
-    file_put_contents('deploy.log', "[{$time}]:".$e->getMessage().PHP_EOL);
+    file_put_contents('deploy.log', "[{$time}]:".$e->getMessage().PHP_EOL, FILE_APPEND);
+
+} finally {
+
+    file_put_contents('post.log', json_encode($_POST));
+
 }
+

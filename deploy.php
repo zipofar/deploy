@@ -25,6 +25,7 @@ function getArrayValue (array $arr, $key)
     if (isset($arr[$key])) {
         return $arr[$key];
     }
+
     throw new \Exception ("Undefined {$key}");
 }
 
